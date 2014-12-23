@@ -19,7 +19,7 @@ class Kv2Joint
 		jointPosition.set(kcbPosition.Position.X, kcbPosition.Position.Y, kcbPosition.Position.Z);
 		type = kcbPosition.JointType;
 	}
-
+	
 	ofVec3f getPosition()
 	{
 		return jointPosition;
@@ -49,188 +49,135 @@ class Kv2Skeleton
 	map<JointType, Kv2Joint> joints;
 };
 
-class ofxKinectCommonBridge : protected ofThread {
+class ofxKinectCommonBridge {
   public:
 	
 	ofxKinectCommonBridge();
+	~ofxKinectCommonBridge();
 
 	// new API
-	bool initSensor( int id = 0 );
-	bool initDepthStream( bool mapDepthToColor = false );
-	bool initColorStream(bool mapColorToDepth = false, ColorImageFormat format = ColorImageFormat_Rgba);
-	bool initIRStream( int width, int height );
-	bool initSkeletonStream( bool seated );
-	bool start();
-
-	void stop();
-
-  	/// is the current frame new?
-	bool isFrameNew();
-	bool isFrameNewVideo();
-	bool isFrameNewDepth();
-	bool isNewSkeleton();
+	bool initSensor( );
+	bool initDepthStream();
+	bool initColorStream(ColorImageFormat format = ColorImageFormat_Rgba);
+	bool initIRStream();
+	bool initSkeletonStream();
 	bool initBodyIndexStream();
-
-	void setDepthClipping(float nearClip=500, float farClip=4000);
+	bool initCalibratedStream();
+	bool initWorldStream();
 	
-	/// updates the pixel buffers and textures
-	///
-	/// make sure to call this to update to the latest incoming frames
+	void start();
+
+
+	void setDepthClipping(float nearClip=500, float farClip=8000);
+	
 	void update();
-	ofPixels& getColorPixelsRef();
-	ofPixels & getDepthPixelsRef();       	///< grayscale values
-	ofShortPixels & getRawDepthPixelsRef();	///< raw 11 bit values
-
-	/// enable/disable frame loading into textures on update()
-	void setUseTexture(bool bUse);
-
-	/// draw the video texture
-	void draw(float x, float y, float w, float h);
-	void draw(float x, float y);
-	void draw(const ofPoint& point);
-	void draw(const ofRectangle& rect);
-
-	/// draw the grayscale depth texture
-	void drawRawDepth(float x, float y, float w, float h);
-	void drawRawDepth(float x, float y);
-	void drawRawDepth(const ofPoint& point);
-	void drawRawDepth(const ofRectangle& rect);
-
-	/// draw the grayscale depth texture
-	void drawDepth(float x, float y, float w, float h);
-	void drawDepth(float x, float y);
-	void drawDepth(const ofPoint& point);
-	void drawDepth(const ofRectangle& rect);
-
-	void drawIR( float x, float y, float w, float h );
-
-	void drawBodyIndex(float x, float y);
-
-	//vector<Skeleton> &getSkeletons();
-	void drawSkeleton(int index, ofVec2f scale);
-	void drawAllSkeletons(ofVec2f scale);
-
-	ofTexture &getRawDepthTexture() {
-		return rawDepthTex;
-	}
-
-	ofTexture &getDepthTexture() {
-		return depthTex;
-	}
-
-	ofTexture &getColorTexture() {
-		return videoTex;
-	}
-
-	vector<ofPoint> allDepthFramePoints;
-	void cacheAllDepthFramePoints();
 	
-	//get a coordinate in the color image back from a point in the depthImage
-	ofVec2f mapDepthToColor(ofPoint depthPoint);
-	ofVec2f mapDepthToColor(ofPoint depthPoint, ofShortPixels& depthImage);
-
-	//get a vector of color frame coordinates back from a set of depthFrame coordinates
-	void mapDepthToColor(vector<ofVec2f>& colorPoints);
-	void mapDepthToColor(const ofShortPixels& depthImage, vector<ofVec2f>& colorPoints);
-	void mapDepthToColor(const vector<ofPoint>& depthPoints, vector<ofVec2f>& colorPoints);
-	void mapDepthToColor(const vector<ofPoint>& depthPoints, const ofShortPixels& depthImage, vector<ofVec2f>& colorPoints);
-
-	//these mappings copy color pixels into the destination provided
-	//if dstColorPixels isn't allocated it will be forced to the same size as depthImage
-	void mapDepthToColor(ofPixels& dstColorPixels);
-	void mapDepthToColor(const ofShortPixels& depthImage, ofPixels& dstColorPixels);
-	void mapDepthToColor(const vector<ofPoint>& depthPoint, ofPixels& dstColorPixels);
-	void mapDepthToColor(const vector<ofPoint>& depthPoint, const ofShortPixels& depthImage, ofPixels& dstColorPixels);
-
-	//given 2d depthPoint(s) in the depth image space, what are the 3d world positions?
-	ofVec3f mapDepthToSkeleton(ofPoint depthPoint);
-	ofVec3f mapDepthToSkeleton(ofPoint depthPoint, const ofShortPixels& depthImage);
-	vector<ofVec3f> mapDepthToSkeleton();
-	vector<ofVec3f> mapDepthToSkeleton(const ofShortPixels& depthImage);
-	vector<ofVec3f> mapDepthToSkeleton(const vector<ofPoint>& depthPoints);
-	vector<ofVec3f> mapDepthToSkeleton(const vector<ofPoint>& depthPoints, const ofShortPixels& depthImage);
+	//basic streams
+	ofPixels&				getBodyIndexPixelsRef();
+	ofPixels&				getColorPixelsRef();
+	ofPixels&				getDepthPixelsRef();
+	ofShortPixels&			getIRPixelsRef();
 	
-	void mapDepthFrameToColorFrame(ofPixels& dstColorPixels);
+	//mapped streams
+	ofFloatPixels&			getWorldPixelsRef();			//the 'world' camera space (x y z in meters)
+	ofPixels&				getCalibratedColorPixelsRef();  //the calibrated RGB->depth image
+	
+	//basic streams
+	ofTexture&				getBodyIndex();
+	ofTexture&				getColor();
+	ofTexture&				getDepth();
+	ofTexture&				getIR();
+	ofTexture&				getCalibratedColor();  //the calibrated RGB->depth image
+	
+	vector<Kv2Skeleton> getSkeletons();
+
+	//Point functions
+	//these might induce threading errors!
+	ofVec3f mapDepthPointToWorldPoint(ofPoint depthPoint);
+	ofVec2f mapDepthPointToColorCoint(ofPoint depthPoint);
+	
+	ofPoint mapWorldPointToDepthPoint(ofPoint worldPoint);
+	ofPoint mapWorldPointToColorPoint(ofPoint worldPoint);
+	
+	//vector functions
+
+		
+	void drawSkeleton( int index, bool depthTrueColorFalse = true);
+
+	bool isNewFrame();
 
   protected:
 
     KCBHANDLE hKinect;
-	//KINECT_IMAGE_FRAME_FORMAT depthFormat;
 	ColorImageFormat colorFormat;
-	//NUI_SKELETON_FRAME k4wSkeletons;
-
+	bool newFrame;
   	bool bInited;
 	bool bStarted;
 	vector<Kv2Skeleton> skeletons;
-	vector<Kv2Skeleton> backSkeletons;
 
 	//quantize depth buffer to 8 bit range
 	vector<unsigned char> depthLookupTable;
 	void updateDepthLookupTable();
-	void updateDepthPixels();
-	void updateIRPixels();
 	bool bNearWhite;
 	float nearClipping, farClipping;
-
-  	bool bUseTexture;
-	ofTexture depthTex; ///< the depth texture
-	ofTexture rawDepthTex; ///<
-	ofTexture videoTex; ///< the RGB texture
-	ofTexture bodyIndexTex;
-	//ofTexture irTex;
-
-	ofPixels videoPixels;
-	ofPixels videoPixelsBack;			///< rgb back
-	ofPixels depthPixels;
-	ofPixels depthPixelsBack;
-	ofShortPixels depthPixelsRaw;
-	ofShortPixels depthPixelsRawBack;	///< depth back
-
-	ofShortPixels irPixelsRaw;
-	ofShortPixels irPixelsBackRaw;
-	ofPixels irPixels;
-	ofPixels irPixelsBack;
-
-	ofPixels bodyIndexPixelsBack;
+	
+	//basic streams
 	ofPixels bodyIndexPixels;
+	ofPixels videoPixels;
+	ofPixels depthPixels;
+	ofShortPixels depthPixelsRaw;
+	ofShortPixels irPixels;	
+	//calibrated streams
+	ofFloatPixels worldPixels;
+	ofPixels	calibratedColorPixels;
 
-	bool bIsFrameNewVideo;
-	bool bNeedsUpdateVideo;
-	bool bIsFrameNewDepth;
-	bool bNeedsUpdateDepth;
-	bool bNeedsUpdateSkeleton;
-	bool bIsSkeletonFrameNew;
-	bool bProgrammableRenderer;
+	
+	ofTexture videoTex;
+	ofTexture depthTex;
+	ofTexture bodyIndexTex;
+	ofTexture calibratedColorTex;
+	ofTexture irTex;
 
-	bool bNeedsUpdateBodyIndex;
+	
 
-	bool bVideoIsInfrared;
+	//frame functions
+	void generateCalibratedWorldFrame();
+	void generateCalibratedColorFrame();
+	
 	bool bUsingSkeletons;
+	
 	bool bUsingDepth;
 	bool bUsingBodyIndex;
+	bool bUsingColorVideo;
+	bool bUsingIRVideo;
+	bool bUsingCalibratedColorStream;
+	bool bUsingWorldStream;
+
+	
+	bool updateDepth;
+	bool updateBodyIndex;
+	bool updateColorVideo;
+	bool updateIRVideo;
+	bool updateCalibratedColorStream;
+	bool updateWorldStream;
 
 	BYTE *irPixelByteArray;
 
-	void threadedFunction();
+	void Function();
 
-	bool mappingColorToDepth;
-	bool mappingDepthToColor;
-	bool beginMappingColorToDepth;
-
-	KCBDepthFrame *pDepthFrame, *pDepthFrameBack;
-	KCBColorFrame *pColorFrame, *pColorFrameBack;
-	KCBInfraredFrame *pInfraredFrame, *pInfraredFrameBack;
-	//KCBBodyFrame* pBodyFrame; // not using this yet
-
-	JointOrientation jointOrients[JointType_Count];
-	Joint joints[JointType_Count];
-
-	KCBBodyIndexFrame *pBodyIndexFrame, *pBodyIndexFrameBack;
-
+	KCBDepthFrame *pDepthFrame;
+	KCBColorFrame *pColorFrame;
+	KCBInfraredFrame *pInfraredFrame;
+	KCBBodyIndexFrame *pBodyIndexFrame;
+	
 	KCBFrameDescription colorFrameDescription;
 	KCBFrameDescription depthFrameDescription;
 	KCBFrameDescription irFrameDescription;
 	KCBFrameDescription bodyIndexFrameDescription;
 
+	JointOrientation jointOrients[JointType_Count];
+	Joint joints[JointType_Count];
+
 	pair<JointType, JointType> skeletonDrawOrder[JointType_Count];
+		
 };
