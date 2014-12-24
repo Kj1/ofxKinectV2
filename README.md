@@ -18,7 +18,10 @@ features added:
 * world stream (rgb float colors denote coordinates)
 * different wait for new frames logic 
 
-made specifically for kinect-projector calibration v2
+made specifically for kinect-projector calibration v2, a calibrated stream is available.
+this stream overlaps the RGB & depth image so you know of each pixel the depth & RGB color.
+This forms the world image; see tutorial here: 
+https://www.youtube.com/watch?feature=player_embedded&v=llQM-OGsETQ
 
 
 Just to answer a few of the initial questions:
